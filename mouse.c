@@ -39,10 +39,23 @@
 #endif
 
 #include "pin_mux.h"
+
+#include "kbrd_mouse.h"
+
 /*******************************************************************************
  * Definitions
  ******************************************************************************/
-
+typedef struct
+{
+	Boolean_t test_task				: 1;
+	Boolean_t openPaint_task		: 1;
+	Boolean_t draw_task 			: 1;
+	Boolean_t openNotepad_task		: 1;
+	Boolean_t move_task				: 1;
+	Boolean_t write_task			: 1;
+	Boolean_t copy_task				: 1;
+	Boolean_t paste_task			: 1;
+}task_flags_t;
 /*******************************************************************************
  * Prototypes
  ******************************************************************************/
@@ -61,11 +74,14 @@ static void USB_DeviceApplicationInit(void);
     (defined(FSL_FEATURE_SOC_USB_ANALOG_COUNT) && (FSL_FEATURE_SOC_USB_ANALOG_COUNT > 0U))
 extern void HW_TimerControl(uint8_t enable);
 #endif
+
+
 /*******************************************************************************
  * Variables
  ******************************************************************************/
 
 USB_DMA_NONINIT_DATA_ALIGN(USB_DATA_ALIGN_SIZE) static uint8_t s_MouseBuffer[USB_HID_MOUSE_REPORT_LENGTH];
+USB_DMA_NONINIT_DATA_ALIGN(USB_DATA_ALIGN_SIZE) static uint8_t s_KeyboardBuffer[USB_HID_KEYBOARD_REPORT_LENGTH];
 usb_hid_mouse_struct_t g_UsbDeviceHidMouse;
 
 extern usb_device_class_struct_t g_UsbDeviceHidMouseConfig;
@@ -84,6 +100,10 @@ usb_device_class_config_list_struct_t g_UsbDeviceHidConfigList = {
     USB_DeviceCallback,   /* Device callback pointer */
     1U,                   /* Class count */
 };
+
+
+task_flags_t task_flags_g = {TRUE};
+
 
 /*******************************************************************************
  * Code
@@ -168,105 +188,128 @@ void USB_DeviceTaskFn(void *deviceHandle)
 /* Update mouse pointer location. Draw a rectangular rotation*/
 static usb_status_t USB_DeviceHidMouseAction(void)
 {
-    static int8_t x = 0U;
-    static int8_t y = 0U;
-    enum
-    {
-        RIGHT,
-        DOWN,
-        LEFT,
-        UP
-    };
-    static uint8_t dir = RIGHT;
+	static task_order_t tasknumber = TEST_TASK;
+	/*Refreshes the mouse and keyboard buffers on the specific bytes used*/
+	g_UsbDeviceHidMouse.keyboard_buffer[0] = 0x02U; /*REFRESHES KEYBOARD ID BUFFER*/
+	g_UsbDeviceHidMouse.keyboard_buffer[3] = 0x00U; /*REFRESHES KEYBOARD 1ST BYTE BUFFER*/
+	g_UsbDeviceHidMouse.keyboard_buffer[4] = 0x00U; /*REFRESHES KEYBOARD 2ND BYTE BUFFER*/
+	g_UsbDeviceHidMouse.mouse_buffer[0] = 0x01U; /*REFRESHES MOUSE ID BUFFER*/
+	g_UsbDeviceHidMouse.mouse_buffer[1] = 0x00U; /*REFRESHES MOUSE BUTTON BUFFER*/
+	g_UsbDeviceHidMouse.mouse_buffer[2] = 0x00U;/*REFRESHES MOUSE X BUFFER*/
+	g_UsbDeviceHidMouse.mouse_buffer[3] = 0x00U;/*REFRESHES MOUSE Y BUFFER*/
 
-    switch (dir)
-    {
-        case RIGHT:
-            /* Move right. Increase X value. */
-//            g_UsbDeviceHidMouse.buffer[0] = 0x01; 	//report id
-//            g_UsbDeviceHidMouse.buffer[1] = 0x01; 	//buttons
-//            g_UsbDeviceHidMouse.buffer[2] = 2U;		//x
-//            g_UsbDeviceHidMouse.buffer[3] = 0U;		//y
-//            g_UsbDeviceHidMouse.buffer[4] = 0U;		//z
 
-        	g_UsbDeviceHidMouse.buffer[0] = 0x02; 	//report id
-			g_UsbDeviceHidMouse.buffer[1] = 0xE1U; 	//left shift
-			g_UsbDeviceHidMouse.buffer[2] = 0x15U;		//r
-			g_UsbDeviceHidMouse.buffer[3] = 0x0CU;		//i
-			g_UsbDeviceHidMouse.buffer[4] = 0x28U;		//enter
+	switch (tasknumber)
+	{
+		case TEST_TASK:
+			task_flags_g.test_task = squareTest(g_UsbDeviceHidMouse.mouse_buffer);
+			if(task_flags_g.test_task)
+			{
+				tasknumber++;
+			}
+			return USB_DeviceHidSend(g_UsbDeviceHidMouse.hidHandle,
+									 USB_HID_MOUSE_ENDPOINT_IN,
+									 g_UsbDeviceHidMouse.mouse_buffer,
+									 USB_HID_MOUSE_REPORT_LENGTH);
+		break;
+		case OPENPAINT_TASK:
+			task_flags_g.openPaint_task = openPaint(g_UsbDeviceHidMouse.keyboard_buffer);
+			if(task_flags_g.openPaint_task )
+				{
+					tasknumber++;
+				}
+			return USB_DeviceHidSend(g_UsbDeviceHidMouse.hidHandle,
+									 USB_HID_MOUSE_ENDPOINT_IN,
+									 g_UsbDeviceHidMouse.keyboard_buffer,
+									 USB_HID_KEYBOARD_REPORT_LENGTH);
+		break;
+		case DRAW_TASK:
+			task_flags_g.draw_task = drawFigure(g_UsbDeviceHidMouse.mouse_buffer);
+			if(task_flags_g.draw_task )
+				{
+					tasknumber++;
+				}
+			return USB_DeviceHidSend(g_UsbDeviceHidMouse.hidHandle,
+									 USB_HID_MOUSE_ENDPOINT_IN,
+									 g_UsbDeviceHidMouse.mouse_buffer,
+									 USB_HID_MOUSE_REPORT_LENGTH);
+		break;
+		case OPENNOTEPAD_TASK:
+			task_flags_g.openNotepad_task = openNotepad(g_UsbDeviceHidMouse.keyboard_buffer);
+			if(task_flags_g.openNotepad_task )
+				{
+					tasknumber++;
+				}
+			return USB_DeviceHidSend(g_UsbDeviceHidMouse.hidHandle,
+									 USB_HID_MOUSE_ENDPOINT_IN,
+									 g_UsbDeviceHidMouse.keyboard_buffer,
+									 USB_HID_KEYBOARD_REPORT_LENGTH);
 
-            x++;
-            if (x > 99U)
-            {
-                dir++;
-            }
-            break;
-        case DOWN:
-            /* Move down. Increase Y value. */
-//        	g_UsbDeviceHidMouse.buffer[0] = 0x01; 	//report id
-//			g_UsbDeviceHidMouse.buffer[1] = 0x01; 	//buttons
-//			g_UsbDeviceHidMouse.buffer[2] = 0U;		//x
-//			g_UsbDeviceHidMouse.buffer[3] = 2U;		//y
-//			g_UsbDeviceHidMouse.buffer[4] = 0U;		//z
+		break;
+		case MOVE_TASK:
+			task_flags_g.move_task = moveMouse(g_UsbDeviceHidMouse.mouse_buffer, LEFT);
+			if(task_flags_g.move_task )
+				{
+					tasknumber++;
+					task_flags_g.move_task = FALSE; /*setting flag to false for a future move */
+				}
+			return USB_DeviceHidSend(g_UsbDeviceHidMouse.hidHandle,
+									 USB_HID_MOUSE_ENDPOINT_IN,
+									 g_UsbDeviceHidMouse.mouse_buffer,
+									 USB_HID_MOUSE_REPORT_LENGTH);
+		break;
+		case WRITE_TASK:
+			task_flags_g.write_task = writeText(g_UsbDeviceHidMouse.keyboard_buffer);
+			if(task_flags_g.write_task )
+				{
+					tasknumber++;
+				}
+			return USB_DeviceHidSend(g_UsbDeviceHidMouse.hidHandle,
+									 USB_HID_MOUSE_ENDPOINT_IN,
+									 g_UsbDeviceHidMouse.keyboard_buffer,
+									 USB_HID_KEYBOARD_REPORT_LENGTH);
+		break;
+		case COPY_TASK:
+			task_flags_g.copy_task = copyText(g_UsbDeviceHidMouse.keyboard_buffer);
+			if(task_flags_g.copy_task )
+				{
+					tasknumber++;
+				}
+			return USB_DeviceHidSend(g_UsbDeviceHidMouse.hidHandle,
+									 USB_HID_MOUSE_ENDPOINT_IN,
+									 g_UsbDeviceHidMouse.keyboard_buffer,
+									 USB_HID_KEYBOARD_REPORT_LENGTH);
+		break;
+		case MOVE_TASK_AGAIN:
+			task_flags_g.move_task = moveMouse(g_UsbDeviceHidMouse.mouse_buffer, RIGHT);
+			if(task_flags_g.move_task )
+				{
+					tasknumber++;
+				}
+			return USB_DeviceHidSend(g_UsbDeviceHidMouse.hidHandle,
+									 USB_HID_MOUSE_ENDPOINT_IN,
+									 g_UsbDeviceHidMouse.mouse_buffer,
+									 USB_HID_MOUSE_REPORT_LENGTH);
+		break;
+		case PASTE_TASK:
+			task_flags_g.paste_task = pasteText(g_UsbDeviceHidMouse.keyboard_buffer);
+			if(task_flags_g.paste_task )
+				{
+					tasknumber++;
+				}
+			return USB_DeviceHidSend(g_UsbDeviceHidMouse.hidHandle,
+									 USB_HID_MOUSE_ENDPOINT_IN,
+									 g_UsbDeviceHidMouse.keyboard_buffer,
+									 USB_HID_KEYBOARD_REPORT_LENGTH);
 
-        	g_UsbDeviceHidMouse.buffer[0] = 0x02; 	//report id
-			g_UsbDeviceHidMouse.buffer[1] = 0xE1U; 	//left shift
-			g_UsbDeviceHidMouse.buffer[2] = 0x07U;		//d
-			g_UsbDeviceHidMouse.buffer[3] = 0x12U;		//o
-			g_UsbDeviceHidMouse.buffer[4] = 0x28U;		//enter
-
-            y++;
-            if (y > 99U)
-            {
-                dir++;
-            }
-            break;
-        case LEFT:
-            /* Move left. Discrease X value. */
-//        	g_UsbDeviceHidMouse.buffer[0] = 0x01; 	//report id
-//			g_UsbDeviceHidMouse.buffer[1] = 0x01; 	//buttons
-//			g_UsbDeviceHidMouse.buffer[2] = (uint8_t)(-2);		//x
-//			g_UsbDeviceHidMouse.buffer[3] = 0U;		//y
-//			g_UsbDeviceHidMouse.buffer[4] = 0U;		//z
-
-        	//todo empieza a partir del 3 exepto el report id
-        	g_UsbDeviceHidMouse.buffer[0] = 0x02; 	//report id
-        	g_UsbDeviceHidMouse.buffer[1] = 0xE1U; 	//left shift
-			g_UsbDeviceHidMouse.buffer[2] = 0x0FU;		//l
-			g_UsbDeviceHidMouse.buffer[3] = 0x08U;		//e
-			g_UsbDeviceHidMouse.buffer[4] = 0x28U;		//enter
-
-            x--;
-            if (x < 2U)
-            {
-                dir++;
-            }
-            break;
-        case UP:
-            /* Move up. Discrease Y value. */
-//        	g_UsbDeviceHidMouse.buffer[0] = 0x01; 	//report id
-//			g_UsbDeviceHidMouse.buffer[1] = 0x01; 	//buttons
-//			g_UsbDeviceHidMouse.buffer[2] = 0U;		//x
-//			g_UsbDeviceHidMouse.buffer[3] = (uint8_t)(-2);		//y
-//			g_UsbDeviceHidMouse.buffer[4] = 0U;		//z
-
-        	g_UsbDeviceHidMouse.buffer[0] = 0x02; 	//report id
-			g_UsbDeviceHidMouse.buffer[1] = 0xE1U; 	//left shift
-			g_UsbDeviceHidMouse.buffer[2] = 0x18U;		//u
-			g_UsbDeviceHidMouse.buffer[3] = 0x13U;		//p
-			g_UsbDeviceHidMouse.buffer[4] = 0x28U;		//enter
-
-            if (y < 2U)
-            {
-                dir = RIGHT;
-            }
-            break;
-        default:
-            break;
-    }
-    /* Send mouse report to the host */
-    return USB_DeviceHidSend(g_UsbDeviceHidMouse.hidHandle, USB_HID_MOUSE_ENDPOINT_IN, g_UsbDeviceHidMouse.buffer,
-                             USB_HID_MOUSE_REPORT_LENGTH);
+		break;
+		default:
+		break;
+	}
+	return USB_DeviceHidSend(g_UsbDeviceHidMouse.hidHandle,
+										 USB_HID_MOUSE_ENDPOINT_IN,
+										 g_UsbDeviceHidMouse.keyboard_buffer,
+										 USB_HID_KEYBOARD_REPORT_LENGTH);
 }
 
 /* The hid class callback */
@@ -533,7 +576,8 @@ static void USB_DeviceApplicationInit(void)
     g_UsbDeviceHidMouse.attach       = 0U;
     g_UsbDeviceHidMouse.hidHandle    = (class_handle_t)NULL;
     g_UsbDeviceHidMouse.deviceHandle = NULL;
-    g_UsbDeviceHidMouse.buffer       = s_MouseBuffer;
+    g_UsbDeviceHidMouse.mouse_buffer = s_MouseBuffer;
+    g_UsbDeviceHidMouse.keyboard_buffer = s_KeyboardBuffer;
 
     /* Initialize the usb stack and class drivers */
     if (kStatus_USB_Success !=
@@ -698,6 +742,7 @@ int main(void)
 void main(void)
 #endif
 {
+	task_flags_g.test_task = FALSE;
     BOARD_InitPins();
     BOARD_BootClockRUN();
     BOARD_InitDebugConsole();
