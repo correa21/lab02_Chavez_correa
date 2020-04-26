@@ -8,7 +8,7 @@
 
 #include <kbrd_mouse.h>
 
-#define KEYBOARD_DELAY 900000U
+#define KEYBOARD_DELAY 2000000U
 #define MOUSE_DELAY 10000U
 
 
@@ -105,9 +105,9 @@ Boolean_t openPaint(uint8_t* MouseOrKeybuffer)
 	{
 	case STATE_0:
 		/* WINDOWS + R*/
-		MouseOrKeybuffer[3] = KEY_LEFT_GUI;
-		MouseOrKeybuffer[4] = KEY_R;
-		delay(KEYBOARD_DELAY);
+		MouseOrKeybuffer[1] = MODIFERKEYS_LEFT_GUI;
+		MouseOrKeybuffer[3] = KEY_R;
+		delay(4*KEYBOARD_DELAY);
 		break;
 	case STATE_1:
 		/* write M*/

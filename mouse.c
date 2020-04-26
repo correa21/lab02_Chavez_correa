@@ -191,6 +191,7 @@ static usb_status_t USB_DeviceHidMouseAction(void)
 	static task_order_t tasknumber = TEST_TASK;
 	/*Refreshes the mouse and keyboard buffers on the specific bytes used*/
 	g_UsbDeviceHidMouse.keyboard_buffer[0] = 0x02U; /*REFRESHES KEYBOARD ID BUFFER*/
+	g_UsbDeviceHidMouse.keyboard_buffer[1] = 0x00U; /*REFRESHES KEYBOARD MODIFIER BUFFER*/
 	g_UsbDeviceHidMouse.keyboard_buffer[3] = 0x00U; /*REFRESHES KEYBOARD 1ST BYTE BUFFER*/
 	g_UsbDeviceHidMouse.keyboard_buffer[4] = 0x00U; /*REFRESHES KEYBOARD 2ND BYTE BUFFER*/
 	g_UsbDeviceHidMouse.mouse_buffer[0] = 0x01U; /*REFRESHES MOUSE ID BUFFER*/
