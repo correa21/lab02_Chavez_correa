@@ -107,7 +107,7 @@ Boolean_t openPaint(uint8_t* MouseOrKeybuffer)
 		/* WINDOWS + R*/
 		MouseOrKeybuffer[1] = MODIFERKEYS_LEFT_GUI;
 		MouseOrKeybuffer[3] = KEY_R;
-		delay(4*KEYBOARD_DELAY);
+		delay(KEYBOARD_DELAY);
 		break;
 	case STATE_1:
 		/* write M*/
@@ -155,7 +155,7 @@ Boolean_t openPaint(uint8_t* MouseOrKeybuffer)
 
 	if (state_g == STATE_9)
 	{
-		delay(10 * KEYBOARD_DELAY);
+		delay(20 * KEYBOARD_DELAY);
 		state_g = STATE_0;
 		flag = TRUE;
 
@@ -241,7 +241,7 @@ Boolean_t openNotepad(uint8_t* MouseOrKeybuffer)
 	switch (state_g) {
 	case STATE_0:
 		/* WINDOWS + R*/
-		MouseOrKeybuffer[3] = KEY_LEFT_GUI;
+		MouseOrKeybuffer[1] = MODIFERKEYS_LEFT_GUI;
 		MouseOrKeybuffer[4] = KEY_R;
 
 		break;
@@ -282,14 +282,14 @@ Boolean_t openNotepad(uint8_t* MouseOrKeybuffer)
 		if (LEFT == direction)
 		{
 			/* CTRL + <- */
-			MouseOrKeybuffer[3] = KEY_LEFT_GUI;
+			MouseOrKeybuffer[1] = MODIFERKEYS_LEFT_GUI;
 			MouseOrKeybuffer[4] = KEY_LEFTARROW;
 			break;
 		}
 		else
 		{ //notepad 2
 			/* CTRL + ->*/
-			MouseOrKeybuffer[3] = KEY_LEFT_GUI;
+			MouseOrKeybuffer[1] = MODIFERKEYS_LEFT_GUI;
 			MouseOrKeybuffer[4] = KEY_RIGHTARROW;
 			break;
 		}
@@ -428,7 +428,7 @@ Boolean_t copyText(uint8_t* MouseOrKeybuffer)
 	switch (state_g) {
 	case STATE_0:
 		/* CRTL */
-		MouseOrKeybuffer[3] = KEY_LEFTCONTROL;
+		MouseOrKeybuffer[1] = MODIFERKEYS_LEFT_CTRL;
 		/* DependS on the language of the computer, it could be KEY_A or KEY_E*/
 		MouseOrKeybuffer[4] = KEY_A;
 		delay(KEYBOARD_DELAY);
@@ -438,7 +438,7 @@ Boolean_t copyText(uint8_t* MouseOrKeybuffer)
 		break;
 	case STATE_3:
 		/*  CTRL + C*/
-		MouseOrKeybuffer[3] = KEY_LEFTCONTROL;
+		MouseOrKeybuffer[1] = MODIFERKEYS_LEFT_CTRL;
 		MouseOrKeybuffer[4] = KEY_C;
 		delay(KEYBOARD_DELAY);
 		break;
@@ -469,7 +469,7 @@ Boolean_t pasteText(uint8_t* MouseOrKeybuffer)
 	switch (state_g)
 	{
 		case STATE_0:
-			MouseOrKeybuffer[3] = KEY_LEFTCONTROL;
+			MouseOrKeybuffer[1] = MODIFERKEYS_LEFT_CTRL;
 			MouseOrKeybuffer[4] = KEY_V;
 			delay(KEYBOARD_DELAY);
 
